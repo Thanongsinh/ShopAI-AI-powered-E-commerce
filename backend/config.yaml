@@ -1,0 +1,37 @@
+server:
+  port: "8080"
+  env: development
+
+database:
+  host: localhost
+  port: "5432"
+  user: postgres
+  password: ""            # ENV DATABASE_PASSWORD
+  name: shopai_db
+  sslmode: disable
+
+redis:
+  host: localhost
+  port: "6379"
+  password: ""
+
+minio:
+  endpoint: localhost:9000
+  access_key: ""          # ENV MINIO_ACCESSKEY
+  secret_key: ""          # ENV MINIO_SECRETKEY
+  bucket: shopai-images
+  use_ssl: false
+
+jwt:
+  secret: ""              # ENV JWT_SECRET
+  access_expire_hours: 24
+  refresh_expire_days: 30
+
+ml_service:
+  url: http://localhost:8001
+
+event_collector:
+  url: http://localhost:8002
+
+seed:
+  enabled: true

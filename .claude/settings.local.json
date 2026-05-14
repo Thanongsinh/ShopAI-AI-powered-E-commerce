@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/thano/.claude/projects/d--ShopAI---AI-powered-E-commerce/design-extract/out/shopai-ai-powered-e-commerce/project/**)",
+      "Bash(go mod *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

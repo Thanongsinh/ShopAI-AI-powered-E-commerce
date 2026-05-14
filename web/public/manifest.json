@@ -1,0 +1,43 @@
+{
+  "name": "ShopAI — ร้านค้าที่รู้ใจคุณ",
+  "short_name": "ShopAI",
+  "description": "AI-powered e-commerce for Southeast Asia — Laos & Thailand",
+  "start_url": "./ShopAI.html",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#6366F1",
+  "orientation": "portrait-primary",
+  "lang": "th",
+  "categories": ["shopping"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "ตะกร้าสินค้า",
+      "short_name": "ตะกร้า",
+      "description": "ดูตะกร้าสินค้าของคุณ",
+      "url": "./ShopAI.html#cart",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "สินค้าแนะนำ AI",
+      "short_name": "AI แนะนำ",
+      "description": "ดูสินค้าที่ AI แนะนำสำหรับคุณ",
+      "url": "./ShopAI.html#ai",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

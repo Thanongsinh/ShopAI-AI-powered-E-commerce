@@ -1,0 +1,99 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shopai-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shopai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopai-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: shopai-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── App services (built locally; comment out for infra-only dev) ──
+  backend:
+    build: ./backend
+    container_name: shopai-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_PASSWORD: postgres
+      JWT_SECRET: dev-secret-change-me
+      MINIO_ACCESSKEY: minioadmin
+      MINIO_SECRETKEY: minioadmin
+    ports:
+      - "8080:8080"
+    profiles: ["app"]
+
+  ml-service:
+    build: ./ml-service
+    container_name: shopai-ml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    profiles: ["app"]
+
+  event-collector:
+    build: ./event-collector
+    container_name: shopai-events
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+    profiles: ["app"]
+
+  web:
+    build: ./web
+    container_name: shopai-web
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    profiles: ["app"]
+
+volumes:
+  postgres_data:
+  minio_data:
