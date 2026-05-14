@@ -1,30 +1,37 @@
 import { AIInsightsCard } from '@/components/ai/AIInsightsCard';
 import { RevenueChart } from '@/components/seller/RevenueChart';
+import { useSellerAnalytics, useSellerDashboard } from '@/hooks/useSeller';
 
 export default function SellerAnalytics() {
+  const dash = useSellerDashboard();
+  const analytics = useSellerAnalytics();
+
+  const chart = dash.data?.revenue_chart ?? [];
+  const a = analytics.data;
+
   return (
     <div className="space-y-6">
       <h2 className="text-h2 font-bold">วิเคราะห์ร้านค้า</h2>
 
-      <RevenueChart
-        data={[
-          { label: 'จ', value: 1200 },
-          { label: 'อ', value: 1800 },
-          { label: 'พ', value: 1500 },
-          { label: 'พฤ', value: 2200 },
-          { label: 'ศ', value: 2800 },
-          { label: 'ส', value: 3100 },
-          { label: 'อา', value: 2450 },
-        ]}
-      />
+      {chart.length > 0 ? <RevenueChart data={chart} /> : null}
 
       <AIInsightsCard
         title="AI Insights"
         items={[
-          { label: 'หมวดที่ขายดี', value: 'อิเล็กทรอนิกส์ 62%, ความงาม 21%' },
-          { label: 'เวลาคนซื้อมากสุด', value: '18:00 – 21:00 (52% ของยอดขาย)' },
-          { label: 'ลูกค้าซื้อซ้ำ', value: '34% — คุ้มค่ากับการลงทุนทำ loyalty' },
-          { label: 'แนะนำให้เพิ่ม stock', value: 'Laneige Lip Mask, iPhone Case' },
+          {
+            label: 'หมวดที่ขายดี',
+            value: a?.top_categories?.length ? a.top_categories.join(', ') : '–',
+          },
+          { label: 'เวลาคนซื้อมากสุด', value: a?.peak_hours ?? '–' },
+          { label: 'ช่วงราคาที่ลูกค้าซื้อบ่อย', value: a?.price_band ?? '–' },
+          {
+            label: 'สินค้า stock ต่ำ',
+            value: a?.low_stock_alert?.length ? a.low_stock_alert.join(', ') : 'ไม่มี',
+          },
+          {
+            label: 'คำแนะนำราคา',
+            value: a?.suggested_discounts?.[0] ?? '–',
+          },
         ]}
       />
     </div>

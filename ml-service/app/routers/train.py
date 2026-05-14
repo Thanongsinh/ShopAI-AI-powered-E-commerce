@@ -1,9 +1,16 @@
 from fastapi import APIRouter
 
+from app.services import collaborative, content
+
 router = APIRouter(prefix="/train", tags=["train"])
 
 
 @router.post("")
 def train():
-    # TODO: rebuild user-item matrix from behaviors and re-fit TruncatedSVD
-    return {"status": "queued", "note": "training stub — implement in Phase 3"}
+    cf = collaborative.fit()
+    cb = content.fit()
+    return {
+        "status": "trained",
+        "collaborative": cf,
+        "content": cb,
+    }

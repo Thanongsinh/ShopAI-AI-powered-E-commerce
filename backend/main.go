@@ -36,13 +36,14 @@ func main() {
 	cartRepo := repositories.NewCartRepository(db)
 	orderRepo := repositories.NewOrderRepository(db)
 	wishlistRepo := repositories.NewWishlistRepository(db)
-	behaviorRepo := repositories.NewBehaviorRepository(db)
+	shopRepo := repositories.NewShopRepository(db)
 
 	// Services
 	authSvc := services.NewAuthService(userRepo, cfg.JWT)
 	productSvc := services.NewProductService(productRepo)
 	recSvc := services.NewRecommendationService(productRepo, cfg.ML.URL)
 	cartSvc := services.NewCartService(cartRepo, productRepo, orderRepo)
+	eventSvc := services.NewEventService(cfg.Events.URL)
 
 	// Controllers
 	ctrls := routes.Controllers{
@@ -50,11 +51,11 @@ func main() {
 		Product:   controllers.NewProductController(productSvc, recSvc),
 		Category:  controllers.NewCategoryController(categoryRepo),
 		Recommend: controllers.NewRecommendationController(recSvc),
-		Event:     controllers.NewEventController(behaviorRepo),
+		Event:     controllers.NewEventController(eventSvc),
 		Cart:      controllers.NewCartController(cartSvc),
 		Order:     controllers.NewOrderController(orderRepo),
 		Wishlist:  controllers.NewWishlistController(wishlistRepo),
-		Seller:    controllers.NewSellerController(productSvc, orderRepo),
+		Seller:    controllers.NewSellerController(productSvc, productRepo, orderRepo, shopRepo),
 		Profile:   controllers.NewProfileController(userRepo),
 	}
 

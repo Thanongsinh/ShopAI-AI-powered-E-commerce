@@ -15,9 +15,9 @@ event-collector/tmp/
 *.test
 
 # Python
-ml-service/__pycache__/
+ml-service/**/__pycache__/
 ml-service/.venv/
-ml-service/*.pyc
+ml-service/**/*.pyc
 ml-service/.pytest_cache/
 ml-service/model/
 

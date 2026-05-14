@@ -64,7 +64,12 @@ func Register(app *fiber.App, c Controllers, auth *services.AuthService) {
 	seller := api.Group("/seller", middleware.RequireAuth(auth), middleware.RequireRole("seller", "admin"))
 	seller.Get("/dashboard", c.Seller.Dashboard)
 	seller.Get("/products", c.Seller.Products)
-	seller.Get("/orders", c.Order.ShopOrders)
+	seller.Post("/products", c.Seller.CreateProduct)
+	seller.Put("/products/:id", c.Seller.UpdateProduct)
+	seller.Delete("/products/:id", c.Seller.DeleteProduct)
+	seller.Get("/orders", c.Seller.ShopOrders)
 	seller.Put("/orders/:id/status", c.Order.UpdateStatus)
+	seller.Get("/shop", c.Seller.GetShop)
+	seller.Put("/shop", c.Seller.UpdateShop)
 	seller.Get("/analytics", c.Seller.Analytics)
 }

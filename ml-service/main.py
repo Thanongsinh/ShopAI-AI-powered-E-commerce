@@ -1,15 +1,38 @@
-"""ShopAI ML Service — FastAPI skeleton.
+"""ShopAI ML service.
 
-Real collaborative filtering (TruncatedSVD) is TODO. Endpoints currently
-return mock product ID lists so the backend integration path is unblocked.
+Endpoints:
+  GET  /health
+  GET  /popular          — cold-start ranking
+  GET  /recommend/{uid}  — collaborative filtering (SVD) with Redis cache
+  GET  /similar/{pid}    — content-based similarity (TF-IDF cosine)
+  POST /train            — re-fit both models from current Postgres state
 """
+
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import recommend, similar, train
+from app.services import cold_start, collaborative, content
 
-app = FastAPI(title="ShopAI ML Service", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Best-effort warm-up so the first request isn't slow; errors are non-fatal
+    # (DB might not be reachable in unit tests).
+    try:
+        collaborative.fit()
+    except Exception:
+        pass
+    try:
+        content.fit()
+    except Exception:
+        pass
+    yield
+
+
+app = FastAPI(title="ShopAI ML Service", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,5 +52,5 @@ def health():
 
 
 @app.get("/popular")
-def popular():
-    return {"product_ids": [1, 2, 4, 6, 7, 10, 11]}
+def popular(limit: int = 10):
+    return {"product_ids": cold_start.popular(limit)}

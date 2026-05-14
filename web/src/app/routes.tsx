@@ -21,6 +21,8 @@ import SellerDashboard from './pages/seller/Dashboard';
 import SellerProducts from './pages/seller/Products';
 import SellerOrders from './pages/seller/Orders';
 import SellerAnalytics from './pages/seller/Analytics';
+import ProductNew from './pages/seller/ProductNew';
+import ProductEdit from './pages/seller/ProductEdit';
 
 export const router = createBrowserRouter([
   {
@@ -82,6 +84,8 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/seller/dashboard" replace /> },
           { path: 'dashboard', Component: SellerDashboard },
           { path: 'products', Component: SellerProducts },
+          { path: 'products/new', Component: ProductNew },
+          { path: 'products/:id/edit', Component: ProductEdit },
           { path: 'orders', Component: SellerOrders },
           { path: 'analytics', Component: SellerAnalytics },
         ],
