@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Container } from '@/components/ui/Container';
 import { Btn } from '@/components/ui/Btn';
 import { CheckoutStepper } from '@/components/cart/CheckoutStepper';
@@ -8,12 +9,14 @@ import { RecommendSection } from '@/components/ai/RecommendSection';
 import { useCart } from '@/store/cart.store';
 import { useRecommendations } from '@/hooks/useProducts';
 import { useTrackBehavior } from '@/hooks/useTrackBehavior';
+import { orderService } from '@/services/order.service';
 import { cn } from '@/lib/cn';
 
 type Payment = 'promptpay' | 'bcel' | 'card' | 'cod';
 
 export default function Checkout() {
   const nav = useNavigate();
+  const queryClient = useQueryClient();
   const lines = useCart((s) => s.lines);
   const clear = useCart((s) => s.clear);
   const recs = useRecommendations();
@@ -29,20 +32,41 @@ export default function Checkout() {
   });
   const [payment, setPayment] = useState<Payment>('promptpay');
   const [orderNo, setOrderNo] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (lines.length === 0 && !orderNo) {
     return (
       <Container style={{ padding: '40px 24px' }}>
-        <p className="text-ink-500">ตะกร้าว่างเปล่า — กลับไป <button onClick={() => nav('/')} className="text-[color:var(--c-primary)] underline">หน้าแรก</button></p>
+        <p className="text-ink-500">
+          ตะกร้าว่างเปล่า — กลับไป{' '}
+          <button onClick={() => nav('/')} className="text-[color:var(--c-primary)] underline">
+            หน้าแรก
+          </button>
+        </p>
       </Container>
     );
   }
 
-  const placeOrder = () => {
-    lines.forEach((l) => trackPurchase(l.product.id));
-    const no = 'SO' + Date.now().toString().slice(-8);
-    setOrderNo(no);
-    clear();
+  const placeOrder = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const fullAddress = `${address.name} (${address.phone}) — ${address.line}, ${address.city} ${address.zip}`;
+      const order = await orderService.checkout({
+        address: fullAddress,
+        payment_method: payment,
+      });
+      lines.forEach((l) => trackPurchase(l.product.id));
+      clear();
+      queryClient.invalidateQueries({ queryKey: ['buyer', 'orders'] });
+      setOrderNo(`SO${String(order.id).padStart(8, '0')}`);
+    } catch (e: any) {
+      setSubmitError(e?.response?.data?.error ?? 'สั่งซื้อไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (orderNo) return <OrderSuccess orderNo={orderNo} recs={recs.data ?? []} />;
@@ -74,6 +98,8 @@ export default function Checkout() {
               payment={payment}
               onBack={() => setStep(2)}
               onPlace={placeOrder}
+              submitting={submitting}
+              error={submitError}
             />
           ) : null}
         </div>
@@ -183,11 +209,15 @@ function Step3({
   payment,
   onBack,
   onPlace,
+  submitting,
+  error,
 }: {
   address: any;
   payment: Payment;
   onBack: () => void;
   onPlace: () => void;
+  submitting: boolean;
+  error: string | null;
 }) {
   return (
     <div>
@@ -203,12 +233,15 @@ function Step3({
           <p className="capitalize">{payment}</p>
         </div>
       </div>
+      {error ? (
+        <div className="mt-4 rounded-md bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</div>
+      ) : null}
       <div className="mt-6 flex justify-between">
-        <Btn variant="ghost" onClick={onBack}>
+        <Btn variant="ghost" onClick={onBack} disabled={submitting}>
           ← กลับ
         </Btn>
-        <Btn size="lg" onClick={onPlace}>
-          ยืนยันและชำระเงิน ✓
+        <Btn size="lg" onClick={onPlace} disabled={submitting}>
+          {submitting ? 'กำลังสั่งซื้อ...' : 'ยืนยันและชำระเงิน ✓'}
         </Btn>
       </div>
     </div>

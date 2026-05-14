@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { Layout } from './Layout';
+import { ProtectedRoute, RequireGuest } from '@/components/auth/ProtectedRoute';
 
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
@@ -30,13 +31,38 @@ export const router = createBrowserRouter([
       { path: 'search', Component: Search },
       { path: 'products/:id', Component: ProductDetail },
       { path: 'cart', Component: Cart },
-      { path: 'checkout', Component: Checkout },
-      { path: 'login', Component: Login },
-      { path: 'register', Component: Register },
+      {
+        path: 'checkout',
+        element: (
+          <ProtectedRoute>
+            <Checkout />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'login',
+        element: (
+          <RequireGuest>
+            <Login />
+          </RequireGuest>
+        ),
+      },
+      {
+        path: 'register',
+        element: (
+          <RequireGuest>
+            <Register />
+          </RequireGuest>
+        ),
+      },
 
       {
         path: 'buyer',
-        Component: BuyerShell,
+        element: (
+          <ProtectedRoute>
+            <BuyerShell />
+          </ProtectedRoute>
+        ),
         children: [
           { index: true, element: <Navigate to="/buyer/profile" replace /> },
           { path: 'profile', Component: Profile },
@@ -47,7 +73,11 @@ export const router = createBrowserRouter([
 
       {
         path: 'seller',
-        Component: SellerShell,
+        element: (
+          <ProtectedRoute>
+            <SellerShell />
+          </ProtectedRoute>
+        ),
         children: [
           { index: true, element: <Navigate to="/seller/dashboard" replace /> },
           { path: 'dashboard', Component: SellerDashboard },

@@ -1,20 +1,39 @@
 import { useCart } from '@/store/cart.store';
+import { useAuth } from '@/store/auth.store';
+import { useOrders } from '@/hooks/useOrders';
 import { AIInsightsCard } from '@/components/ai/AIInsightsCard';
+import { fmtKip } from '@/lib/format';
 
 export default function Profile() {
-  const lines = useCart((s) => s.lines);
   const wish = useCart((s) => s.wishlist);
-  const totalSpend = lines.reduce((a, l) => a + l.product.price * l.qty, 0);
+  const user = useAuth((s) => s.user);
+  const orders = useOrders();
+
+  const orderList = orders.data ?? [];
+  const totalSpend = orderList
+    .filter((o) => o.status !== 'cancelled')
+    .reduce((a, o) => a + o.total, 0);
 
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-ink-200 bg-white p-6">
-        <h2 className="mb-4 text-h2 font-bold">ภาพรวมบัญชี</h2>
+        <div className="mb-5 flex items-center gap-4">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-full text-xl font-bold text-white"
+            style={{ background: 'linear-gradient(135deg,var(--c-primary),var(--c-ai))' }}
+          >
+            {user?.name?.charAt(0)?.toUpperCase() ?? 'A'}
+          </div>
+          <div>
+            <h2 className="text-h2 font-bold">{user?.name ?? 'บัญชีของคุณ'}</h2>
+            <p className="text-sm text-ink-500">{user?.email}</p>
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="คำสั่งซื้อ" value="24" />
-          <Stat label="ใช้จ่ายทั้งหมด" value={`${totalSpend.toLocaleString()} ₭`} />
+          <Stat label="คำสั่งซื้อ" value={String(orderList.length)} />
+          <Stat label="ใช้จ่ายทั้งหมด" value={fmtKip(totalSpend)} />
           <Stat label="Wishlist" value={String(wish.length)} />
-          <Stat label="คะแนนสะสม" value="1,245 pts" />
+          <Stat label="คะแนนสะสม" value={`${Math.floor(totalSpend / 10).toLocaleString()} pts`} />
         </div>
       </section>
 

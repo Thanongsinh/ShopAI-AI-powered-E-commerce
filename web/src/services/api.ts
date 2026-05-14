@@ -24,7 +24,13 @@ api.interceptors.request.use((cfg) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err?.response?.status === 401) setToken(null);
+    if (err?.response?.status === 401) {
+      setToken(null);
+      // Notify auth store; using a CustomEvent avoids a circular import.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('shopai:unauthorized'));
+      }
+    }
     return Promise.reject(err);
   },
 );

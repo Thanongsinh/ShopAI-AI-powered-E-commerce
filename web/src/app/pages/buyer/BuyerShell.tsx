@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useNavigate } from 'react-router';
 import { Container } from '@/components/ui/Container';
+import { useAuth } from '@/store/auth.store';
 import { cn } from '@/lib/cn';
 
 const TABS = [
@@ -9,6 +10,10 @@ const TABS = [
 ];
 
 export default function BuyerShell() {
+  const user = useAuth((s) => s.user);
+  const logout = useAuth((s) => s.logout);
+  const nav = useNavigate();
+  const initial = user?.name?.trim()?.charAt(0)?.toUpperCase() || 'A';
   return (
     <Container style={{ padding: '32px 24px' }}>
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
@@ -18,11 +23,11 @@ export default function BuyerShell() {
               className="flex h-12 w-12 items-center justify-center rounded-full text-base font-bold text-white"
               style={{ background: 'linear-gradient(135deg,var(--c-primary),var(--c-ai))' }}
             >
-              A
+              {initial}
             </div>
-            <div>
-              <p className="text-sm font-bold">คุณ</p>
-              <p className="text-xs text-ink-500">customer@shopai.dev</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{user?.name ?? 'บัญชี'}</p>
+              <p className="truncate text-xs text-ink-500">{user?.email}</p>
             </div>
           </div>
           <nav className="flex flex-col">
@@ -43,6 +48,16 @@ export default function BuyerShell() {
                 {t.label}
               </NavLink>
             ))}
+            <button
+              onClick={() => {
+                logout();
+                nav('/');
+              }}
+              className="mt-1 flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm text-danger hover:bg-danger/5"
+            >
+              <span>↩️</span>
+              ออกจากระบบ
+            </button>
           </nav>
         </aside>
 

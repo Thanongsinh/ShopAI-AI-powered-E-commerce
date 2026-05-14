@@ -1,28 +1,46 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
+import { useOrders } from '@/hooks/useOrders';
+import type { Order, OrderStatus } from '@/types/order.types';
+import { fmtKip } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type Status = 'all' | 'pending' | 'shipping' | 'delivered' | 'cancelled';
-type OrderStatus = Exclude<Status, 'all'>;
+type TabKey = 'all' | OrderStatus;
 
-interface MockOrder {
-  id: string;
-  date: string;
-  status: OrderStatus;
-  total: number;
-  items: number;
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: 'รอชำระ',
+  paid: 'ชำระแล้ว',
+  shipping: 'กำลังจัดส่ง',
+  delivered: 'ส่งแล้ว',
+  cancelled: 'ยกเลิก',
+};
+
+const STATUS_BADGE: Record<OrderStatus, React.ComponentProps<typeof Badge>['type']> = {
+  pending: 'pending',
+  paid: 'success',
+  shipping: 'shipping',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+};
+
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  } catch {
+    return iso;
+  }
 }
 
-const MOCK_ORDERS: MockOrder[] = [
-  { id: 'SO20260514001', date: '14 พ.ค. 69', status: 'shipping', total: 45900, items: 1 },
-  { id: 'SO20260510002', date: '10 พ.ค. 69', status: 'delivered', total: 4990, items: 2 },
-  { id: 'SO20260502003', date: '2 พ.ค. 69', status: 'cancelled', total: 11900, items: 1 },
-  { id: 'SO20260428004', date: '28 เม.ย. 69', status: 'pending', total: 590, items: 1 },
-];
-
 export default function Orders() {
-  const [tab, setTab] = useState<Status>('all');
-  const orders = tab === 'all' ? MOCK_ORDERS : MOCK_ORDERS.filter((o) => o.status === tab);
+  const [tab, setTab] = useState<TabKey>('all');
+  const query = useOrders();
+
+  const filtered = useMemo<Order[]>(() => {
+    const all = query.data ?? [];
+    if (tab === 'all') return all;
+    return all.filter((o) => o.status === tab);
+  }, [query.data, tab]);
 
   return (
     <div>
@@ -33,6 +51,7 @@ export default function Orders() {
           [
             ['all', 'ทั้งหมด'],
             ['pending', 'รอชำระ'],
+            ['paid', 'ชำระแล้ว'],
             ['shipping', 'กำลังจัดส่ง'],
             ['delivered', 'ส่งแล้ว'],
             ['cancelled', 'ยกเลิก'],
@@ -40,7 +59,7 @@ export default function Orders() {
         ).map(([k, label]) => (
           <button
             key={k}
-            onClick={() => setTab(k)}
+            onClick={() => setTab(k as TabKey)}
             className={cn(
               'whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold',
               tab === k
@@ -53,39 +72,69 @@ export default function Orders() {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {orders.map((o) => (
-          <div key={o.id} className="rounded-xl border border-ink-200 bg-white p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs text-ink-500">เลขที่ #{o.id}</p>
-                <p className="text-sm font-semibold text-ink-900">วันที่ {o.date}</p>
-              </div>
-              <Badge type={o.status === 'shipping' ? 'shipping' : o.status === 'delivered' ? 'delivered' : o.status === 'pending' ? 'pending' : 'cancelled'}>
-                {o.status === 'shipping' ? 'กำลังจัดส่ง' : o.status === 'delivered' ? 'ส่งแล้ว' : o.status === 'pending' ? 'รอชำระ' : 'ยกเลิก'}
-              </Badge>
-            </div>
-            <div className="mb-3 flex items-center gap-2 text-xs text-ink-500">
-              <span className="text-success">✓ สั่งแล้ว</span>
-              <span>→</span>
-              <span className={o.status !== 'pending' ? 'text-success' : ''}>
-                {o.status === 'pending' ? '○' : '✓'} ชำระแล้ว
-              </span>
-              <span>→</span>
-              <span className={o.status === 'shipping' || o.status === 'delivered' ? 'text-success' : ''}>
-                {o.status === 'shipping' || o.status === 'delivered' ? '✓' : '○'} กำลังจัดส่ง
-              </span>
-              <span>→</span>
-              <span className={o.status === 'delivered' ? 'text-success' : ''}>
-                {o.status === 'delivered' ? '✓' : '○'} ส่งแล้ว
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-ink-500">{o.items} รายการ</p>
-              <p className="font-bold text-[color:var(--c-primary)]">{o.total.toLocaleString()} ₭</p>
-            </div>
-          </div>
-        ))}
+      {query.isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-32 animate-pulse rounded-xl bg-ink-100" />
+          ))}
+        </div>
+      ) : query.isError ? (
+        <div className="rounded-2xl border border-danger/30 bg-danger/5 p-6 text-sm text-danger">
+          โหลดคำสั่งซื้อไม่สำเร็จ — ตรวจสอบการเข้าสู่ระบบและลองอีกครั้ง
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-ink-200 bg-white py-12 text-center">
+          <p className="mb-2 text-5xl">📦</p>
+          <p className="text-h4 font-bold">ยังไม่มีคำสั่งซื้อ</p>
+          <p className="text-sm text-ink-500">เริ่มช้อปแล้วกลับมาตรวจสอบรายการที่นี่</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((o) => (
+            <OrderCard key={o.id} order={o} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderCard({ order }: { order: Order }) {
+  const itemCount = order.items?.reduce((a, i) => a + i.qty, 0) ?? 0;
+  const orderNo = `SO${String(order.id).padStart(8, '0')}`;
+  const status = order.status;
+  const reached = (target: OrderStatus): boolean => {
+    const ladder: OrderStatus[] = ['pending', 'paid', 'shipping', 'delivered'];
+    if (status === 'cancelled') return false;
+    return ladder.indexOf(status) >= ladder.indexOf(target);
+  };
+  return (
+    <div className="rounded-xl border border-ink-200 bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs text-ink-500">เลขที่ #{orderNo}</p>
+          <p className="text-sm font-semibold text-ink-900">วันที่ {formatDate(order.created_at)}</p>
+        </div>
+        <Badge type={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</Badge>
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-500">
+        <span className={reached('pending') ? 'text-success' : ''}>✓ สั่งแล้ว</span>
+        <span>→</span>
+        <span className={reached('paid') ? 'text-success' : ''}>
+          {reached('paid') ? '✓' : '○'} ชำระแล้ว
+        </span>
+        <span>→</span>
+        <span className={reached('shipping') ? 'text-success' : ''}>
+          {reached('shipping') ? '✓' : '○'} กำลังจัดส่ง
+        </span>
+        <span>→</span>
+        <span className={reached('delivered') ? 'text-success' : ''}>
+          {reached('delivered') ? '✓' : '○'} ส่งแล้ว
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-ink-500">{itemCount} รายการ</p>
+        <p className="font-bold text-[color:var(--c-primary)]">{fmtKip(order.total)}</p>
       </div>
     </div>
   );

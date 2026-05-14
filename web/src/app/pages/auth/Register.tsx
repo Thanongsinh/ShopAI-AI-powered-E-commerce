@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { authService } from '@/services/auth.service';
+import { useAuth } from '@/store/auth.store';
 import { Btn } from '@/components/ui/Btn';
 
 export default function Register() {
   const nav = useNavigate();
+  const register = useAuth((s) => s.register);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -14,10 +15,10 @@ export default function Register() {
     setLoading(true);
     setErr(null);
     try {
-      await authService.register(form);
-      nav('/');
+      await register(form);
+      nav('/', { replace: true });
     } catch (e: any) {
-      setErr(e?.response?.data?.error ?? 'สมัครไม่สำเร็จ');
+      setErr(e?.message ?? 'สมัครไม่สำเร็จ');
     } finally {
       setLoading(false);
     }

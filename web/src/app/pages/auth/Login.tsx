@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { authService } from '@/services/auth.service';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { useAuth } from '@/store/auth.store';
 import { Btn } from '@/components/ui/Btn';
 
 export default function Login() {
   const nav = useNavigate();
+  const location = useLocation();
+  const login = useAuth((s) => s.login);
   const [email, setEmail] = useState('seller@shopai.dev');
   const [pwd, setPwd] = useState('password123');
   const [err, setErr] = useState<string | null>(null);
@@ -15,10 +17,11 @@ export default function Login() {
     setErr(null);
     setLoading(true);
     try {
-      await authService.login(email, pwd);
-      nav('/');
+      await login(email, pwd);
+      const from = (location.state as { from?: string } | null)?.from ?? '/';
+      nav(from, { replace: true });
     } catch (e: any) {
-      setErr(e?.response?.data?.error ?? 'เข้าสู่ระบบไม่สำเร็จ');
+      setErr(e?.message ?? 'เข้าสู่ระบบไม่สำเร็จ');
     } finally {
       setLoading(false);
     }
